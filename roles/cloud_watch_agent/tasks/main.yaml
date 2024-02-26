@@ -1,0 +1,46 @@
+---
+
+- name: Install cloudwatch rpm from a remote repo [Amazon distribution]
+  dnf:
+    name: 'https://amazoncloudwatch-agent.s3.amazonaws.com/amazon_linux/amd64/latest/amazon-cloudwatch-agent.rpm'
+    state: present
+    disable_gpg_check: true
+  when: ansible_facts['distribution'] == "Amazon"
+
+- name: Install cloudwatch rpm from a remote repo [RedHat distribution]
+  dnf:
+    name: 'https://amazoncloudwatch-agent.s3.amazonaws.com/redhat/amd64/latest/amazon-cloudwatch-agent.rpm'
+    state: present
+    disable_gpg_check: true
+  when: ansible_facts['distribution'] == "RedHat"
+
+- name: Template file to amazon-cloudwatch-agent.json
+  ansible.builtin.template:
+    src: config.json.j2
+    dest: /opt/aws/amazon-cloudwatch-agent/etc/amazon-cloudwatch-agent.json
+    owner: root
+    group: root
+    mode: '0644'
+
+- name: Create collectd directory
+  ansible.builtin.file:
+    path: /usr/share/collectd/
+    state: directory
+    mode: '0644'
+
+- name: Create types.db file
+  ansible.builtin.file:
+    path: /usr/share/collectd/types.db
+    owner: root
+    group: root
+    state: touch
+    mode: '0644'
+
+- name: Start the CloudWatch agent...
+  ansible.builtin.shell: "/opt/aws/amazon-cloudwatch-agent/bin/amazon-cloudwatch-agent-ctl -a fetch-config -m ec2 -s -c file:/opt/aws/amazon-cloudwatch-agent/etc/amazon-cloudwatch-agent.json"
+
+- name: Check if CloudWatch agent is running...
+  shell: amazon-cloudwatch-agent-ctl -a status
+  register: out
+
+- debug: var=out.stdout_lines

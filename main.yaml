@@ -1,0 +1,9 @@
+---
+
+- name: Cloud Watch Agent install playbook
+  hosts: localhost
+  become: yes
+  connection: local
+
+  roles:
+  - cloud_watch_agent
